@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 FONT_NAME = "Calibri"
 FONT_SIZE= 12
@@ -39,25 +40,66 @@ def toggle_password():
         pass_entry.config(show="")
         toggle_btn.config(text="Hide")
         
+# ---------------------------- Writing in json  ---------------------------- #
+def writing_in(data):
+    with open("data.json", "w") as data_file:
+        json.dump(data, data_file, indent=4)
+
+
 
 # ---------------------------- SAVE PASSWORD ------------------------------- #
+
 
 def save_data():
     website = web_entry.get()
     email = email_entry.get()
-    password = pass_entry.get()   
+    password = pass_entry.get()
+    new_data = {
+        website:{
+            "email":email,
+            "password": password             
+            
+        }
+    }   
     
     
     if len(website) == 0 or len(password) == 0 or len(email) == 0:
         messagebox.showerror(title="OOPS", message="Don't leave any inputs empty!")
     else:
-        usr_message =messagebox.askokcancel(title=website, message=f"These are the details entered: \n Email: {email} \n Password: {password} \n Is it okay to save?")    
-        
-        if usr_message:
-            with open("user_data.txt", "a") as data_file:
-                data_file.write(f"{website} | {email} | {password}\n")
+        try:
+            with open("data.json", "r") as data_file:
+                # == Read the existing File == # 
+                data = json.load(data_file)
+        except FileNotFoundError:
+            writing_in(new_data)
+        else:
+            # Update the file with new data
+            data.update(new_data)
+            writing_in(data)
+        finally:
             web_entry.delete(0, END)
             pass_entry.delete(0, END)
+
+
+def find_pass():
+    website = web_entry.get()
+    try:
+        with open("data.json", "r") as file:
+            data = json.load(file)
+            
+    except FileNotFoundError:
+        messagebox.showerror(title="Oops",message="No data file found")
+    else:
+        if website in data:
+            email = data[website]["email"]
+            password = data[website]["password"]
+            messagebox.showinfo(title=website, message=f"Email: {email}\nPassword: {password}")
+        else:
+            messagebox.showinfo(title="No website", message=f"No details for the {website} exist")
+           
+            
+            
+           
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -83,9 +125,10 @@ pass_label.grid(row=3, column=0)
 
 # -------------------------- Entries -------------------------- #
 
-web_entry = Entry(width=35, highlightthickness=0)
+web_entry = Entry(width=21, highlightthickness=0)
 web_entry.focus()
-web_entry.grid(row=1, column=1, pady=5, columnspan=2)
+web_entry.grid(row=1, column=1, pady=5)
+
 
 email_entry = Entry(width=35, highlightthickness=0)
 email_entry.insert(0, "fake@gmail.com")
@@ -99,6 +142,9 @@ toggle_btn = Button(text="Show", width=10, bg=BG_COLOR, highlightthickness=0, co
 toggle_btn.grid(row=3, column=2)
 
 # -------------------------- Buttons -------------------------- #
+search_btn = Button(text="Search", bg=BG_COLOR, width=10, command=find_pass)
+search_btn.grid(row=1, column=2 )
+
 
 generate_pass_btn = Button(text="Generate Password ", width=29, bg=BG_COLOR, highlightthickness=0, font=(FONT_NAME), command=pass_generate)
 generate_pass_btn.grid(row=4, column=1, columnspan=2, pady=5)
